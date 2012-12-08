@@ -14,3 +14,8 @@ targets:
      -> 16-bit & 32-bit Windows
      -> 16-bit & 32-bit OS/2
 
+This code does not have a vast centralized makefile system or use
+autoconf to tie everything together. Over time a framework will be
+built. Until then, support for multiple compilers/platforms will
+be ad-hoc.
+
