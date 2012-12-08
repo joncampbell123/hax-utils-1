@@ -73,12 +73,7 @@ static int parse_argv(int argc,char **argv) {
  *      all PE structures, you should use another version of this code specialized
  *      for it. */
 static void pe_examine(int exe_fd,uint32_t ofs) {
-	struct msdos_pe_coff_header mainhdr;
-
-	/* +0x00 "PE\0\0" */
-	lseek(exe_fd,ofs+4,SEEK_SET);
-	read(exe_fd,&mainhdr,sizeof(mainhdr));
-	new_exerange(ofs,ofs+sizeof(mainhdr)+4UL-1UL,"PE COFF Main header");
+	new_exerange(ofs,ofs+0x18UL-1UL,"PE COFF Main header");
 }
 
 int main(int argc,char **argv) {
@@ -160,6 +155,17 @@ int main(int argc,char **argv) {
 			else if (!memcmp(temp,"NE",2)) {
 				new_exerange(ofs,ofs+0x3FUL,str_ne_header);
 			}
+		}
+	}
+
+	/* we do rudimentary checking for other extensions---check the bytes immediately after the resident image */
+	if (exehdr_rgn.image_end != 0 && exehdr_rgn.image_end < exehdr_rgn.file_end) {
+		lseek(exe_fd,exehdr_rgn.image_end,SEEK_SET);
+		r = read(exe_fd,temp,sizeof(temp));
+		if (r < sizeof(temp)) memset(temp+r,0,sizeof(temp)-r);
+
+		if (!memcmp(temp,"ARJ_SFX\0",8)) {
+			new_exerange(exehdr_rgn.image_end,exehdr_rgn.image_end+8UL+32UL-1UL,"ARJ self-extracting executable package header");
 		}
 	}
 

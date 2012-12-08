@@ -40,12 +40,12 @@ struct msdos_pe_coff_header { /* does NOT include "PE\0\0" signature */
 
 /* information parsed from header */
 struct msdos_exe_header_regions {
-	uint32_t reloc_ofs,reloc_end;
-	uint16_t reloc_entries;
+	uint32_t reloc_ofs,reloc_end;		/* first byte, last byte + 1 */
+	uint16_t reloc_entries;	
 	uint32_t header_end;
-	uint32_t image_ofs;
-	uint32_t image_end;
-	uint32_t file_end;
+	uint32_t image_ofs;			/* first byte */
+	uint32_t image_end;			/* last byte + 1 */
+	uint32_t file_end;			/* last byte + 1 */
 };
 #pragma pack(pop)
 
