@@ -20,12 +20,13 @@
 #include "filefmt/exe/msdosexe/exerange.h"
 #include "filefmt/exe/msdosexe/exeparse.h"
 
-const char		str_ne_header[] = "New Executable header";
 const char		str_exe_main_header[] = "EXE main header";
 const char		str_exe_header_area[] = "EXE header area";
-const char		str_pe_header[] = "Portable Executable header";
 const char		str_exe_resident_image[] = "EXE resident image";
 const char		str_exe_relocation_table[] = "EXE relocation table";
+
+const char		str_ne_header[] = "New Executable header";
+const char		str_pe_header[] = "Portable Executable header";
 
 int msdos_exe_sanity_check() {
 	if (sizeof(struct msdos_exe_header) != 0x1C) return -1;

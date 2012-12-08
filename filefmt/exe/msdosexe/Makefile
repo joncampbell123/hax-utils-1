@@ -4,7 +4,7 @@
 builddir=linux-$(shell uname -m)
 bindir=$(builddir)/bin
 objdir=$(builddir)/obj
-outputs=$(bindir)/info
+outputs=$(bindir)/info $(bindir)/neinfo
 prefix=/usr/hax-utils-1/filefmt/exe/msdosexe
 MY_CFLAGS=-g0 -Os -fomit-frame-pointer -DLINUX=1 -Wall -pedantic -std=gnu99 -I../../..
 CC=gcc
@@ -29,6 +29,12 @@ install:
 
 distclean: clean
 	rm -Rf $(builddir)
+
+$(bindir)/neinfo: $(objdir)/neinfo.o $(objdir)/exerange.o $(objdir)/exeparse.o
+	$(CC) $(MY_LDFLAGS) $(LDFLAGS) -o $@ $^
+
+$(objdir)/neinfo.o: neinfo.c
+	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 $(bindir)/info: $(objdir)/info.o $(objdir)/exerange.o $(objdir)/exeparse.o
 	$(CC) $(MY_LDFLAGS) $(LDFLAGS) -o $@ $^
