@@ -11,10 +11,9 @@ struct exe_range {
 };
 #pragma pack(pop)
 
-#define MAX_EXERANGES		128
-
-extern struct exe_range		exerange[MAX_EXERANGES];
+extern int			exerangealloc;
 extern int			exeranges;
+extern struct exe_range*	exerange;
 
 void print_exeranges(uint32_t start,uint32_t end,int first,int last,int indent);
 struct exe_range *new_exerange(uint32_t start,uint32_t end,const char *str);

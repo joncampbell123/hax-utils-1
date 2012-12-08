@@ -19,15 +19,32 @@
 #include "filefmt/exe/msdosexe/dosexe.h"
 #include "filefmt/exe/msdosexe/exerange.h"
 
-struct exe_range		exerange[MAX_EXERANGES];
+int				exerangealloc=0;
+struct exe_range*		exerange=NULL;
 int				exeranges=0;
 
 struct exe_range *new_exerange(uint32_t start,uint32_t end,const char *str) {
 	struct exe_range *e;
 
-	if (exeranges >= MAX_EXERANGES) {
-		fprintf(stderr,"ERROR: Out of ranges\n");
-		exit(1);
+	if (exerange == NULL) {
+		exerangealloc = 64;
+		exeranges = 0;
+		exerange = (struct exe_range*)malloc(sizeof(struct exe_range) * exerangealloc);
+		if (exerange == NULL) {
+			fprintf(stderr,"Unable to allocate exe ranges\n");
+			exit(1);
+		}
+	}
+	else if (exeranges >= exerangealloc) {
+		int ns = exerangealloc + (exerangealloc / 2);
+		e = (struct exe_range*)realloc(exerange,sizeof(struct exe_range) * ns);
+		if (e == NULL) {
+			fprintf(stderr,"Unable to extend exe ranges\n");
+			exit(1);
+		}
+
+		exerange = e;
+		exerangealloc = ns;
 	}
 
 	e = &exerange[exeranges++];
@@ -69,6 +86,12 @@ void free_exeranges() {
 			e->alloc_str=0;
 			e->str=NULL;
 		}
+	}
+
+	if (exerange != NULL) {
+		exerangealloc = 0;
+		free(exerange);
+		exerange = NULL;
 	}
 }
 
