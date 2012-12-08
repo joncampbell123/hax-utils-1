@@ -198,6 +198,46 @@ static void free_ranges() {
 	}
 }
 
+static void print_ranges(uint32_t start,uint32_t end,int first,int last,int indent) {
+	struct exe_range *rg;
+	int i,j,fi;
+
+	for (i=first;i <= last;) {
+		rg = &range[i];
+
+		if (i == first) {
+			if (start < rg->start) {
+				for (j=0;j < indent;j++) printf("  ");
+				printf("  0x%08lX-0x%08lX: [unused]\n",(unsigned long)start,(unsigned long)rg->start-1UL);
+			}
+		}
+
+		for (j=0;j < indent;j++) printf("  ");
+		printf("  0x%08lX-0x%08lX: %s\n",(unsigned long)rg->start,(unsigned long)rg->end,rg->str);
+
+		i++;
+		if (i <= last) {
+			fi = i;
+			while (i <= last && range[i].start >= rg->start && range[i].start <= rg->end) i++;
+			if (i != fi) {
+				print_ranges(rg->start,rg->end,fi,i-1,indent+1);
+			}
+		}
+
+		if (i <= last && (rg->end+1UL) != range[i].start) {
+			for (j=0;j < indent;j++) printf("  ");
+			printf("  0x%08lX-0x%08lX: [unused]\n",(unsigned long)rg->end+1UL,(unsigned long)range[i].start-1UL);
+		}
+
+		if ((i-1) == last) {
+			if (end > rg->end) {
+				for (j=0;j < indent;j++) printf("  ");
+				printf("  0x%08lX-0x%08lX: [unused]\n",(unsigned long)rg->end+1UL,(unsigned long)end);
+			}
+		}
+	}
+}
+
 int main(int argc,char **argv) {
 	struct msdos_exe_header exehdr;
 	struct exe_range *rg;
@@ -328,11 +368,7 @@ int main(int argc,char **argv) {
 
 	/* summary */
 	printf("EXE summary:\n");
-	for (i=0;i < ranges;i++) {
-		rg = &range[i];
-		printf("  0x%08lX-0x%08lX: %s\n",(unsigned long)rg->start,(unsigned long)rg->end,rg->str);
-	}
-
+	print_ranges(0,file_len-1UL,0,ranges-1,0);
 	close(exe_fd);
 	free_ranges();
 	return 0;
