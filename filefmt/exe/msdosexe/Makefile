@@ -6,7 +6,7 @@ bindir=$(builddir)/bin
 objdir=$(builddir)/obj
 outputs=$(bindir)/info
 prefix=/usr/hax-utils-1/filefmt/exe/msdosexe
-MY_CFLAGS=-g0 -Os -fomit-frame-pointer -DLINUX=1 -Wall -pedantic -I../../..
+MY_CFLAGS=-g0 -Os -fomit-frame-pointer -DLINUX=1 -Wall -pedantic -std=gnu99 -I../../..
 CC=gcc
 
 all: $(builddir) $(bindir) $(objdir) $(outputs)
@@ -30,12 +30,15 @@ install:
 distclean: clean
 	rm -Rf $(builddir)
 
-$(bindir)/info: $(objdir)/info.o $(objdir)/exerange.o
+$(bindir)/info: $(objdir)/info.o $(objdir)/exerange.o $(objdir)/exeparse.o
 	$(CC) $(MY_LDFLAGS) $(LDFLAGS) -o $@ $^
 
 $(objdir)/info.o: info.c
 	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 $(objdir)/exerange.o: exerange.c
+	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
+
+$(objdir)/exeparse.o: exeparse.c
 	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
 

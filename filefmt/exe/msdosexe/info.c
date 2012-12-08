@@ -18,24 +18,11 @@
 #include "util/rawint.h"
 #include "filefmt/exe/msdosexe/dosexe.h"
 #include "filefmt/exe/msdosexe/exerange.h"
-
-static const char		str_ne_header[] = "New Executable header";
-static const char		str_exe_main_header[] = "EXE main header";
-static const char		str_exe_header_area[] = "EXE header area";
-static const char		str_pe_header[] = "Portable Executable header";
-static const char		str_exe_resident_image[] = "EXE resident image";
-static const char		str_exe_relocation_table[] = "EXE relocation table";
+#include "filefmt/exe/msdosexe/exeparse.h"
 
 static unsigned char		temp[4096];
 static int			exe_fd = -1;
 static char*			exe_file = NULL;
-
-static int sanity_check() {
-	if (sizeof(struct msdos_exe_header) != 0x1C) return -1;
-	if (offsetof(struct msdos_exe_header,bytes_in_last_512_page) != 2) return -2;
-	if (sizeof(struct msdos_pe_coff_header) != 0x14) return -3;
-	return 0;
-}
 
 static void help() {
 	fprintf(stderr,"info [options] <MS-DOS EXE file>\n");
@@ -95,9 +82,8 @@ static void pe_examine(int exe_fd,uint32_t ofs) {
 }
 
 int main(int argc,char **argv) {
+	struct msdos_exe_header_regions exehdr_rgn;
 	struct msdos_exe_header exehdr;
-	struct exe_range *rg;
-	uint32_t image_len;
 	uint32_t file_len;
 	int r;
 
@@ -108,8 +94,10 @@ int main(int argc,char **argv) {
 		fprintf(stderr,"Unable to open EXE file %s\n",exe_file);
 		return 1;
 	}
+	file_len = (uint32_t)lseek(exe_fd,0,SEEK_END);
+	lseek(exe_fd,0,SEEK_SET);
 
-	if ((r=sanity_check()) != 0) {
+	if ((r=msdos_exe_sanity_check()) != 0) {
 		fprintf(stderr,"SANITY CHECK FAILED: Code %d\n",r);
 		return 1;
 	}
@@ -126,64 +114,35 @@ int main(int argc,char **argv) {
 		return 1;
 	}
 
-	printf("EXE main header:\n");
-	printf("    Bytes in last 512-byte page:                 %u\n",
-		r_le16(&exehdr.bytes_in_last_512_page));
-	printf("    Total 512-byte pages:                        %u\n",
-		r_le16(&exehdr.total_512_pages));
-	printf("    Number of relocation entries:                %u\n",
-		r_le16(&exehdr.number_of_relocation_entries));
-	printf("    Header size in paragraphs:                   %u\n",
-		r_le16(&exehdr.header_size_in_paragraphs));
-	printf("    Minimum extra memory (in paragraphs):        %u (%lu bytes)\n",
-		r_le16(&exehdr.min_memory_paragraphs),
-		(unsigned long)r_le16(&exehdr.min_memory_paragraphs) * 16UL);
-	printf("    Maximum extra memory (in paragraphs):        %u (%lu bytes)\n",
-		r_le16(&exehdr.max_memory_paragraphs),
-		(unsigned long)r_le16(&exehdr.max_memory_paragraphs) * 16UL);
-	printf("    Initial stack pointer (SS:SP):               0x%04X:%04X from start of EXE\n",
-		r_le16(&exehdr.initial_ss),
-		r_le16(&exehdr.initial_sp));
-	printf("    Checksum:                                    0x%04X\n",
-		r_le16(&exehdr.checksum));
-	printf("    Initial instruction pointer (CS:IP):         0x%04X:%04X from start of EXE\n",
-		r_le16(&exehdr.initial_cs),
-		r_le16(&exehdr.initial_ip));
-	printf("    Offset of relocation table:                  %u\n",
-		r_le16(&exehdr.offset_of_relocation_table));
-	printf("    Overlay number:                              %u\n",
-		r_le16(&exehdr.overlay_number));
-
-	file_len = (uint32_t)lseek(exe_fd,0,SEEK_END);
-
-	image_len = (unsigned long)r_le16(&exehdr.total_512_pages) * 512UL;
-	if (image_len == 0UL) image_len = 512UL;
-	if (r_le16(&exehdr.bytes_in_last_512_page) != 0)
-		image_len += (unsigned long)r_le16(&exehdr.bytes_in_last_512_page) - 512UL;
-
-	new_exerange(0,0x1C - 1UL,str_exe_main_header);
-	new_exerange(0,((unsigned long)r_le16(&exehdr.header_size_in_paragraphs) * 16UL) - 1UL,
-		str_exe_header_area);
-
-	/* we will compute the length later */
-	rg = new_exerange(((unsigned long)r_le16(&exehdr.header_size_in_paragraphs) * 16UL),
-		image_len - 1UL,str_exe_resident_image);
-	if (rg->end < rg->start) {
-		rg->end = rg->start;
-		fprintf(stderr,"WARNING: EXE resident image ends before it starts\n");
+	fprintf_exehdr(stdout,&exehdr);
+	if (msdos_exe_header_compute_regions(&exehdr_rgn,&exehdr,file_len)) {
+		fprintf(stderr,"EXE header parsing failed\n");
+		return 1;
 	}
 
-	if (exehdr.number_of_relocation_entries != 0 && exehdr.offset_of_relocation_table != 0) {
+	new_exerange(0,0x1C - 1UL,str_exe_main_header);
+	if (exehdr_rgn.header_end != 0UL)
+		new_exerange(0,exehdr_rgn.header_end - 1UL,str_exe_header_area);
+
+	/* we will compute the length later */
+	if (exehdr_rgn.image_end != 0UL) {
+		if (exehdr_rgn.image_ofs < exehdr_rgn.image_end)
+			new_exerange(exehdr_rgn.image_ofs,exehdr_rgn.image_end - 1UL,str_exe_resident_image);
+		else
+			fprintf(stderr,"WARNING: Image ends before image start\n");
+	}
+	else {
+		fprintf(stderr,"WARNING: Image end at zero\n");
+	}
+
+	if (exehdr_rgn.reloc_ofs != 0UL && exehdr_rgn.reloc_entries != 0) {
 		struct msdos_exe_relocation_entry *table = (struct msdos_exe_relocation_entry*)temp;
-		unsigned int c = r_le16(&exehdr.number_of_relocation_entries);
+		unsigned int c = exehdr_rgn.reloc_entries;
 		unsigned int i,rd,cnt=0;
 
 		printf("EXE relocation table:\n");
-		lseek(exe_fd,r_le16(&exehdr.offset_of_relocation_table),SEEK_SET);
-		new_exerange(r_le16(&exehdr.offset_of_relocation_table),
-			(unsigned long)r_le16(&exehdr.offset_of_relocation_table) +
-			((unsigned long)r_le16(&exehdr.number_of_relocation_entries) * 4UL) - 1UL,
-			str_exe_relocation_table);
+		lseek(exe_fd,exehdr_rgn.reloc_ofs,SEEK_SET);
+		new_exerange(exehdr_rgn.reloc_ofs,exehdr_rgn.reloc_end - 1UL,str_exe_relocation_table);
 
 		do {
 			rd = c;
@@ -192,7 +151,7 @@ int main(int argc,char **argv) {
 			c -= rd;
 
 			if (read(exe_fd,temp,rd*sizeof(struct msdos_exe_relocation_entry)) !=
-				(rd*sizeof(struct msdos_exe_relocation_entry))) {
+					(rd*sizeof(struct msdos_exe_relocation_entry))) {
 				fprintf(stderr,"Read error in relocation table\n");
 				return 1;
 			}
@@ -200,8 +159,8 @@ int main(int argc,char **argv) {
 			for (i=0;i < rd;i++,cnt++) {
 				if ((cnt%5) == 0) printf("    ");
 				printf("+0x%04X:%04X ",
-					r_le16(&table[i].segment),
-					r_le16(&table[i].offset));
+						r_le16(&table[i].segment),
+						r_le16(&table[i].offset));
 				if ((cnt%5) == 4) printf("\n");
 			}
 		} while (c != 0);

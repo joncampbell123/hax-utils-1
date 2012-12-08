@@ -37,6 +37,15 @@ struct msdos_pe_coff_header { /* does NOT include "PE\0\0" signature */
 	uint16_le_t		Characteristics;		/* +0x12 */
 								/* +0x14 */
 };
+
+/* information parsed from header */
+struct msdos_exe_header_regions {
+	uint32_t reloc_ofs,reloc_end;
+	uint16_t reloc_entries;
+	uint32_t header_end;
+	uint32_t image_ofs;
+	uint32_t image_end;
+};
 #pragma pack(pop)
 
 #endif /* __FILEFMT_EXE_MSDOS_DOSEXE_H */

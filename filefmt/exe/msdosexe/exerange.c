@@ -108,6 +108,8 @@ void print_exeranges(uint32_t start,uint32_t end,int first,int last,int indent) 
 				for (j=0;j < indent;j++) printf("  ");
 				printf("  0x%08lX-0x%08lX: [extra]\n",(unsigned long)rg->end+1UL,(unsigned long)end);
 			}
+			else if (end < rg->end)
+				printf("     !! ^ This region extends past the parent region\n");
 		}
 	}
 }
