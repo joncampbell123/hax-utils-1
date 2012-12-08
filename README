@@ -1,0 +1,16 @@
+This is the master collection of Jonathan's HAX utilities,
+revision 1. This is where ALL development goes, even experimental
+stuff.
+
+This code by design primarily targets Linux, but code will eventually
+have makefiles and support for compiling under other compilers and
+targets:
+
+  Microsoft Visual Studio 2008
+     -> 32-bit or 64-bit Windows
+
+  Open Watcom
+     -> 16-bit & 32-bit DOS
+     -> 16-bit & 32-bit Windows
+     -> 16-bit & 32-bit OS/2
+
