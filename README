@@ -19,3 +19,12 @@ autoconf to tie everything together. Over time a framework will be
 built. Until then, support for multiple compilers/platforms will
 be ad-hoc.
 
+Projects may move around in the source tree until stabilized. Do
+not assume location or output executable name.
+
+Despite that warning, projects are oriented loosely around categories
+of HAX. They are:
+
+filefmt             File format/content parsing and editing
+  exe                 Executable file formats
+
