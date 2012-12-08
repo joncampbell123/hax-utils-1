@@ -2,22 +2,40 @@
 # Compiler: GCC
 
 builddir=linux-$(shell uname -m)
-outputs=$(builddir)/info
-MY_CFLAGS=-g3 -O0 -fno-omit-frame-pointer -DLINUX=1 -Wall -pedantic
+bindir=$(builddir)/bin
+objdir=$(builddir)/obj
+outputs=$(bindir)/info
+prefix=/usr/hax-utils-1/filefmt/exe/msdosexe
+MY_CFLAGS=-g0 -Os -fomit-frame-pointer -DLINUX=1 -Wall -pedantic -I../../..
 CC=gcc
 
-all: $(builddir) $(outputs)
+all: $(builddir) $(bindir) $(objdir) $(outputs)
 
 $(builddir):
 	mkdir -p $(builddir)
 
+$(bindir):
+	mkdir -p $(bindir)
+
+$(objdir):
+	mkdir -p $(objdir)
+
 clean:
-	rm -f $(outputs)
-	rmdir $(builddir)
+	rm -f $(outputs) $(objdir)/*
+
+install:
+	mkdir -p $(DESTDIR)$(prefix)
+	cp -v $(outputs) $(DESTDIR)$(prefix)/
 
 distclean: clean
 	rm -Rf $(builddir)
 
-$(builddir)/info: info.c
-	$(CC) $(MY_CFLAGS) $(CFLAGS) -o $@ $<
+$(bindir)/info: $(objdir)/info.o $(objdir)/exerange.o
+	$(CC) $(MY_LDFLAGS) $(LDFLAGS) -o $@ $^
+
+$(objdir)/info.o: info.c
+	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
+
+$(objdir)/exerange.o: exerange.c
+	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
 

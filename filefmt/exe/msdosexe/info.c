@@ -15,73 +15,25 @@
 # endif
 #endif
 
-/* these typedefs exist solely to remind me that they are little endian,
- * and must be converted to host byte order if the CPU is big endian */
-typedef uint16_t	uint16_le_t;
-typedef uint32_t	uint32_le_t;
-typedef uint64_t	uint64_le_t;
+#include "util/rawint.h"
+#include "filefmt/exe/msdosexe/dosexe.h"
+#include "filefmt/exe/msdosexe/exerange.h"
 
-/* these macros are for reading the little Endian values in the header.
- * one is used if you intend to use it on structure fields, the other
- * if you intend to point it at raw buffer data. */
-static inline uint16_t r_le16(const uint16_le_t *x) {
-	return *((const uint16_t*)x);
-}
+static const char		str_ne_header[] = "New Executable header";
+static const char		str_exe_main_header[] = "EXE main header";
+static const char		str_exe_header_area[] = "EXE header area";
+static const char		str_pe_header[] = "Portable Executable header";
+static const char		str_exe_resident_image[] = "EXE resident image";
+static const char		str_exe_relocation_table[] = "EXE relocation table";
 
-static inline uint16_t r_le16r(const void *x) {
-	return *((const uint16_t*)x);
-}
-
-static inline uint32_t r_le32(const uint32_le_t *x) {
-	return *((const uint32_t*)x);
-}
-
-static inline uint32_t r_le32r(const void *x) {
-	return *((const uint32_t*)x);
-}
-
-static inline uint64_t r_le64(const uint64_le_t *x) {
-	return *((const uint64_t*)x);
-}
-
-static inline uint64_t r_le64r(const void *x) {
-	return *((const uint64_t*)x);
-}
-
-#define MSDOS_EXE_MZ_SIGNATURE	0x5A4D
-
-#pragma pack(push,1)
-struct msdos_exe_header {
-	uint16_le_t		mz_signature;			/* +0x00 'MZ' 0x4D 0x5A */
-	uint16_le_t		bytes_in_last_512_page;		/* +0x02 number of bytes in last 512-byte page or 0 to use the whole page */
-	uint16_le_t		total_512_pages;		/* +0x04 total 512-byte pages in executable */
-	uint16_le_t		number_of_relocation_entries;	/* +0x06 number of relocation entries */
-	uint16_le_t		header_size_in_paragraphs;	/* +0x08 header size in paragraphs (N x 16 = number of bytes) */
-	uint16_le_t		min_memory_paragraphs;		/* +0x0A minimum memory allocated in addition to code size (paragraphs) */
-	uint16_le_t		max_memory_paragraphs;		/* +0x0C maximum memory allocated in addition to code size (paragraphs) */
-	uint16_le_t		initial_ss;			/* +0x0E initial SS segment (relative to start of EXE) */
-	uint16_le_t		initial_sp;			/* +0x10 initial SP */
-	uint16_le_t		checksum;			/* +0x12 checksum */
-	uint16_le_t		initial_ip;			/* +0x14 initial IP */
-	uint16_le_t		initial_cs;			/* +0x16 initial CS segment (relative to start of EXE) */
-	uint16_le_t		offset_of_relocation_table;	/* +0x18 offset of relocation table (or 0x40 if NE/LE/etc. EXE) */
-	uint16_le_t		overlay_number;			/* +0x1A 0=main program */
-								/* =0x1C */
-};
-
-struct msdos_exe_relocation_entry { /* array at offset_of_relocation_table */
-	uint16_le_t		offset;
-	uint16_le_t		segment;
-};
-#pragma pack(pop)
-
-static unsigned char temp[4096];
-static char* exe_file = NULL;
-static int exe_fd = -1;
+static unsigned char		temp[4096];
+static int			exe_fd = -1;
+static char*			exe_file = NULL;
 
 static int sanity_check() {
 	if (sizeof(struct msdos_exe_header) != 0x1C) return -1;
 	if (offsetof(struct msdos_exe_header,bytes_in_last_512_page) != 2) return -2;
+	if (sizeof(struct msdos_pe_coff_header) != 0x14) return -3;
 	return 0;
 }
 
@@ -130,112 +82,16 @@ static int parse_argv(int argc,char **argv) {
 	return 0;
 }
 
-struct exe_range {
-	/* start <= x <= end inclusive */
-	uint32_t		start:31;
-	uint32_t		alloc_str;
-	uint32_t		end;
-	char*			str;
-};
+/* NTS: This code only cares about showing you there's a PE header. To dump
+ *      all PE structures, you should use another version of this code specialized
+ *      for it. */
+static void pe_examine(int exe_fd,uint32_t ofs) {
+	struct msdos_pe_coff_header mainhdr;
 
-#define MAX_RANGES		16
-
-static struct exe_range		range[MAX_RANGES];
-static int			ranges=0;
-
-static const char		str_exe_main_header[] = "EXE main header";
-static const char		str_exe_header_area[] = "EXE header area";
-static const char		str_exe_resident_image[] = "EXE resident image";
-static const char		str_exe_relocation_table[] = "EXE relocation table";
-
-static struct exe_range *new_range(uint32_t start,uint32_t end,const char *str) {
-	struct exe_range *e;
-
-	if (ranges >= MAX_RANGES) {
-		fprintf(stderr,"ERROR: Out of ranges\n");
-		exit(1);
-	}
-
-	e = &range[ranges++];
-	e->alloc_str = 0;
-	e->start = start;
-	e->end = end;
-	e->str = (char*)str;
-	return e;
-}
-
-static void sort_ranges() {
-	struct exe_range tmp;
-	unsigned int i,c;
-
-	do {
-		c=0;
-		for (i=0;(i+1) < ranges;i++) {
-			if (range[i].start > range[i+1].start) {
-				tmp = range[i];
-				range[i] = range[i+1];
-				range[i+1] = tmp;
-				c++;
-			}
-			else if (range[i].start == range[i+1].start && range[i].end < range[i+1].end) {
-				tmp = range[i];
-				range[i] = range[i+1];
-				range[i+1] = tmp;
-				c++;
-			}
-		}
-	} while (c != 0);
-}
-
-static void free_ranges() {
-	while (ranges > 0) {
-		struct exe_range *e = &range[--ranges];
-		if (e->alloc_str) {
-			free(e->str);
-			e->alloc_str=0;
-			e->str=NULL;
-		}
-	}
-}
-
-static void print_ranges(uint32_t start,uint32_t end,int first,int last,int indent) {
-	struct exe_range *rg;
-	int i,j,fi;
-
-	for (i=first;i <= last;) {
-		rg = &range[i];
-
-		if (i == first) {
-			if (start < rg->start) {
-				for (j=0;j < indent;j++) printf("  ");
-				printf("  0x%08lX-0x%08lX: [unused]\n",(unsigned long)start,(unsigned long)rg->start-1UL);
-			}
-		}
-
-		for (j=0;j < indent;j++) printf("  ");
-		printf("  0x%08lX-0x%08lX: %s\n",(unsigned long)rg->start,(unsigned long)rg->end,rg->str);
-
-		i++;
-		if (i <= last) {
-			fi = i;
-			while (i <= last && range[i].start >= rg->start && range[i].start <= rg->end) i++;
-			if (i != fi) {
-				print_ranges(rg->start,rg->end,fi,i-1,indent+1);
-			}
-		}
-
-		if (i <= last && (rg->end+1UL) != range[i].start) {
-			for (j=0;j < indent;j++) printf("  ");
-			printf("  0x%08lX-0x%08lX: [unused]\n",(unsigned long)rg->end+1UL,(unsigned long)range[i].start-1UL);
-		}
-
-		if ((i-1) == last) {
-			if (end > rg->end) {
-				for (j=0;j < indent;j++) printf("  ");
-				printf("  0x%08lX-0x%08lX: [unused]\n",(unsigned long)rg->end+1UL,(unsigned long)end);
-			}
-		}
-	}
+	/* +0x00 "PE\0\0" */
+	lseek(exe_fd,ofs+4,SEEK_SET);
+	read(exe_fd,&mainhdr,sizeof(mainhdr));
+	new_exerange(ofs,ofs+sizeof(mainhdr)+4UL-1UL,"PE COFF Main header");
 }
 
 int main(int argc,char **argv) {
@@ -243,7 +99,7 @@ int main(int argc,char **argv) {
 	struct exe_range *rg;
 	uint32_t image_len;
 	uint32_t file_len;
-	int r,i;
+	int r;
 
 	if (parse_argv(argc,argv))
 		return 1;
@@ -305,13 +161,12 @@ int main(int argc,char **argv) {
 	if (r_le16(&exehdr.bytes_in_last_512_page) != 0)
 		image_len += (unsigned long)r_le16(&exehdr.bytes_in_last_512_page) - 512UL;
 
-	new_range(0,0x1C - 1UL,str_exe_main_header);
-	new_range(0,
-		((unsigned long)r_le16(&exehdr.header_size_in_paragraphs) * 16UL) - 1UL,
+	new_exerange(0,0x1C - 1UL,str_exe_main_header);
+	new_exerange(0,((unsigned long)r_le16(&exehdr.header_size_in_paragraphs) * 16UL) - 1UL,
 		str_exe_header_area);
 
 	/* we will compute the length later */
-	rg = new_range(((unsigned long)r_le16(&exehdr.header_size_in_paragraphs) * 16UL),
+	rg = new_exerange(((unsigned long)r_le16(&exehdr.header_size_in_paragraphs) * 16UL),
 		image_len - 1UL,str_exe_resident_image);
 	if (rg->end < rg->start) {
 		rg->end = rg->start;
@@ -325,7 +180,7 @@ int main(int argc,char **argv) {
 
 		printf("EXE relocation table:\n");
 		lseek(exe_fd,r_le16(&exehdr.offset_of_relocation_table),SEEK_SET);
-		new_range(r_le16(&exehdr.offset_of_relocation_table),
+		new_exerange(r_le16(&exehdr.offset_of_relocation_table),
 			(unsigned long)r_le16(&exehdr.offset_of_relocation_table) +
 			((unsigned long)r_le16(&exehdr.number_of_relocation_entries) * 4UL) - 1UL,
 			str_exe_relocation_table);
@@ -353,24 +208,34 @@ int main(int argc,char **argv) {
 		if ((cnt%5) != 0) printf("\n");
 	}
 
-	/* sort the ranges. we're going to check for overlapping regions (NOTE: This invalidates our rg_* pointers) */
-	sort_ranges();
+	/* MS-Windows and other formats extend the EXE format with an offset at 0x3C */
+	if (r_le16(&exehdr.header_size_in_paragraphs) >= 4) {
+		uint32_t ofs=0;
 
-	/* if there is extra data at the end, note it */
-	if (ranges > 0 && file_len > 0UL) {
-		uint32_t start;
+		lseek(exe_fd,0x3C,SEEK_SET);
+		read(exe_fd,&ofs,4);
+		ofs = r_le32(&ofs);
+		if (ofs >= 0x40) {
+			lseek(exe_fd,ofs,SEEK_SET);
+			read(exe_fd,temp,4);
 
-		i = ranges - 1;
-		start = (rg = &range[i--])->start;
-		while (i > 0 && range[i].start == start) rg = &range[i--];
-		if ((rg->end+1UL) < file_len) new_range(rg->end+1UL,file_len-1UL,"Non-EXE region");
+			if (!memcmp(temp,"PE\0\0",4)) {
+				pe_examine(exe_fd,ofs);
+			}
+			else if (!memcmp(temp,"NE",2)) {
+				new_exerange(ofs,ofs+0x3FUL,str_ne_header);
+			}
+		}
 	}
+
+	/* sort the ranges. we're going to check for overlapping regions (NOTE: This invalidates our rg_* pointers) */
+	sort_exeranges();
 
 	/* summary */
 	printf("EXE summary:\n");
-	print_ranges(0,file_len-1UL,0,ranges-1,0);
+	print_exeranges(0,file_len-1UL,0,exeranges-1,0);
 	close(exe_fd);
-	free_ranges();
+	free_exeranges();
 	return 0;
 }
 
