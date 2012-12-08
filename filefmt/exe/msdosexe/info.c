@@ -84,56 +84,32 @@ static void pe_examine(int exe_fd,uint32_t ofs) {
 int main(int argc,char **argv) {
 	struct msdos_exe_header_regions exehdr_rgn;
 	struct msdos_exe_header exehdr;
-	uint32_t file_len;
 	int r;
 
 	if (parse_argv(argc,argv))
 		return 1;
-
-	if ((exe_fd = open(exe_file,O_RDONLY|O_BINARY)) < 0) {
-		fprintf(stderr,"Unable to open EXE file %s\n",exe_file);
-		return 1;
-	}
-	file_len = (uint32_t)lseek(exe_fd,0,SEEK_END);
-	lseek(exe_fd,0,SEEK_SET);
 
 	if ((r=msdos_exe_sanity_check()) != 0) {
 		fprintf(stderr,"SANITY CHECK FAILED: Code %d\n",r);
 		return 1;
 	}
 
-	/* OK. read the header */
-	if (read(exe_fd,&exehdr,sizeof(exehdr)) != sizeof(exehdr)) {
-		fprintf(stderr,"Unable to read EXE header\n");
+	if ((exe_fd = open(exe_file,O_RDONLY|O_BINARY)) < 0) {
+		fprintf(stderr,"Unable to open EXE file %s\n",exe_file);
 		return 1;
 	}
 
-	/* check signature */
-	if (r_le16(&exehdr.mz_signature) != MSDOS_EXE_MZ_SIGNATURE) {
-		fprintf(stderr,"EXE header not present\n");
+	if ((r=msdos_exe_read_main_header(&exehdr,&exehdr_rgn,exe_fd))) {
+		fprintf(stderr,"Unable to read EXE header, code %d\n",r);
 		return 1;
 	}
 
 	fprintf_exehdr(stdout,&exehdr);
-	if (msdos_exe_header_compute_regions(&exehdr_rgn,&exehdr,file_len)) {
+	if (msdos_exe_header_compute_regions(&exehdr_rgn,&exehdr,exehdr_rgn.file_end)) {
 		fprintf(stderr,"EXE header parsing failed\n");
 		return 1;
 	}
-
-	new_exerange(0,0x1C - 1UL,str_exe_main_header);
-	if (exehdr_rgn.header_end != 0UL)
-		new_exerange(0,exehdr_rgn.header_end - 1UL,str_exe_header_area);
-
-	/* we will compute the length later */
-	if (exehdr_rgn.image_end != 0UL) {
-		if (exehdr_rgn.image_ofs < exehdr_rgn.image_end)
-			new_exerange(exehdr_rgn.image_ofs,exehdr_rgn.image_end - 1UL,str_exe_resident_image);
-		else
-			fprintf(stderr,"WARNING: Image ends before image start\n");
-	}
-	else {
-		fprintf(stderr,"WARNING: Image end at zero\n");
-	}
+	msdos_exe_header_add_regions(&exehdr_rgn);
 
 	if (exehdr_rgn.reloc_ofs != 0UL && exehdr_rgn.reloc_entries != 0) {
 		struct msdos_exe_relocation_entry *table = (struct msdos_exe_relocation_entry*)temp;
@@ -151,7 +127,7 @@ int main(int argc,char **argv) {
 			c -= rd;
 
 			if (read(exe_fd,temp,rd*sizeof(struct msdos_exe_relocation_entry)) !=
-					(rd*sizeof(struct msdos_exe_relocation_entry))) {
+				(rd*sizeof(struct msdos_exe_relocation_entry))) {
 				fprintf(stderr,"Read error in relocation table\n");
 				return 1;
 			}
@@ -159,8 +135,8 @@ int main(int argc,char **argv) {
 			for (i=0;i < rd;i++,cnt++) {
 				if ((cnt%5) == 0) printf("    ");
 				printf("+0x%04X:%04X ",
-						r_le16(&table[i].segment),
-						r_le16(&table[i].offset));
+					r_le16(&table[i].segment),
+					r_le16(&table[i].offset));
 				if ((cnt%5) == 4) printf("\n");
 			}
 		} while (c != 0);
@@ -192,7 +168,7 @@ int main(int argc,char **argv) {
 
 	/* summary */
 	printf("EXE summary:\n");
-	print_exeranges(0,file_len-1UL,0,exeranges-1,0);
+	print_exeranges(0,exehdr_rgn.file_end-1UL,0,exeranges-1,0);
 	close(exe_fd);
 	free_exeranges();
 	return 0;

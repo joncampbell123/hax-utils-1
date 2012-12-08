@@ -63,8 +63,9 @@ void fprintf_exehdr(FILE *fp,struct msdos_exe_header *x) {
 		r_le16(&x->total_512_pages));
 	fprintf(fp,"    Number of relocation entries:                %u\n",
 		r_le16(&x->number_of_relocation_entries));
-	fprintf(fp,"    Header size in paragraphs:                   %u\n",
-		r_le16(&x->header_size_in_paragraphs));
+	fprintf(fp,"    Header size in paragraphs:                   %u (%lu bytes)\n",
+		r_le16(&x->header_size_in_paragraphs),
+		(unsigned long)r_le16(&x->header_size_in_paragraphs) * 16UL);
 	fprintf(fp,"    Minimum extra memory (in paragraphs):        %u (%lu bytes)\n",
 		r_le16(&x->min_memory_paragraphs),
 		(unsigned long)r_le16(&x->min_memory_paragraphs) * 16UL);
@@ -83,5 +84,41 @@ void fprintf_exehdr(FILE *fp,struct msdos_exe_header *x) {
 		r_le16(&x->offset_of_relocation_table));
 	fprintf(fp,"    Overlay number:                              %u\n",
 		r_le16(&x->overlay_number));
+}
+
+int msdos_exe_read_main_header(struct msdos_exe_header *exehdr,struct msdos_exe_header_regions *exehdr_rgn,int exe_fd) {
+	exehdr_rgn->file_end = (uint32_t)lseek(exe_fd,0,SEEK_END);
+	lseek(exe_fd,0,SEEK_SET);
+
+	/* OK. read the header */
+	if (read(exe_fd,exehdr,sizeof(*exehdr)) != sizeof(*exehdr)) {
+		fprintf(stderr,"Unable to read EXE header\n");
+		return -1;
+	}
+
+	/* check signature */
+	if (r_le16(&exehdr->mz_signature) != MSDOS_EXE_MZ_SIGNATURE) {
+		fprintf(stderr,"EXE header not present\n");
+		return -2;
+	}
+
+	return 0;
+}
+
+void msdos_exe_header_add_regions(struct msdos_exe_header_regions *exehdr_rgn) {
+	new_exerange(0,0x1C - 1UL,str_exe_main_header);
+	if (exehdr_rgn->header_end != 0UL)
+		new_exerange(0,exehdr_rgn->header_end - 1UL,str_exe_header_area);
+
+	/* we will compute the length later */
+	if (exehdr_rgn->image_end != 0UL) {
+		if (exehdr_rgn->image_ofs < exehdr_rgn->image_end)
+			new_exerange(exehdr_rgn->image_ofs,exehdr_rgn->image_end - 1UL,str_exe_resident_image);
+		else
+			fprintf(stderr,"WARNING: Image ends before image start\n");
+	}
+	else {
+		fprintf(stderr,"WARNING: Image end at zero\n");
+	}
 }
 

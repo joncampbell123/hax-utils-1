@@ -45,6 +45,7 @@ struct msdos_exe_header_regions {
 	uint32_t header_end;
 	uint32_t image_ofs;
 	uint32_t image_end;
+	uint32_t file_end;
 };
 #pragma pack(pop)
 
