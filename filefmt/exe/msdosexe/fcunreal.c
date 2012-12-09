@@ -135,7 +135,7 @@ int identify_fc_unreal_10() {
 	 *           SMSW to detect virtual 8086 mode, If either 8086 or vm86 is
 	 *           detected, the code returns with BP == 0 else it returns with
 	 *           BP == 1) */
-	if ((stk=ofs2res(exehdr_rgn.sssp_offset,16)) == NULL)
+	if ((stk=ofs2res(exehdr_rgn.sssp_offset,8)) == NULL)
 		return 0;
 
 	fprintf(stdout,"Unreal v1.0 initial stack WORDS:\n");
@@ -509,7 +509,7 @@ int main(int argc,char **argv) {
 	}
 
 	resident_size = (uint32_t)(exehdr_rgn.image_end - exehdr_rgn.image_ofs);
-	if (resident_size >= 0x100 && resident_size <= 0x8000) {
+	if (resident_size >= 0x100 && resident_size <= 0x10000) {
 		uint32_t extra = (uint32_t)r_le16(&exehdr.min_memory_paragraphs) << 4UL;
 
 		resident = malloc(resident_size + extra + 2048);
