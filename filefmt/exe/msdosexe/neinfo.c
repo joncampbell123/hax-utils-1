@@ -108,71 +108,95 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 			r_le32(&ne_mainhdr.nonresident_table_offset)+((uint32_t)r_le16(&ne_mainhdr.nonresident_table_length)),
 			"NE nonresident name table");
 
-	fprintf(stderr,"NE (New Executable) main header (at %lu):\n",(unsigned long)hdr_ofs);
-	fprintf(stderr,"    Linker version:                              %u\n",ne_mainhdr.linker_version);
-	fprintf(stderr,"    Linker revision:                             %u\n",ne_mainhdr.linker_revision);
-	fprintf(stderr,"    Entry table offset:                          %u (+%u)\n",
+	if (r_le16(&ne_mainhdr.module_ref_table_offset) != 0 && r_le16(&ne_mainhdr.module_ref_table_entries) != 0)
+		new_exerange(hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.module_ref_table_offset)),
+			hdr_ofs-1UL+((uint32_t)r_le16(&ne_mainhdr.module_ref_table_offset))+
+			((uint32_t)r_le16(&ne_mainhdr.module_ref_table_entries)) * 2UL,
+			"NE module reference table");
+
+	if (r_le16(&ne_mainhdr.resource_table_offset) != 0 && r_le16(&ne_mainhdr.resident_name_table_offset) != 0 &&
+		r_le16(&ne_mainhdr.resource_table_offset) < r_le16(&ne_mainhdr.resident_name_table_offset))
+		new_exerange(hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.resource_table_offset)),
+			hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.resident_name_table_offset))-1UL,
+			"NE resource table");
+
+	if (r_le16(&ne_mainhdr.resident_name_table_offset) != 0 && r_le16(&ne_mainhdr.module_ref_table_offset) != 0 &&
+		r_le16(&ne_mainhdr.resident_name_table_offset) < r_le16(&ne_mainhdr.module_ref_table_offset))
+		new_exerange(hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.resident_name_table_offset)),
+			hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.module_ref_table_offset))-1UL,
+			"NE resident name table");
+
+	if (r_le16(&ne_mainhdr.imported_name_table_offset) != 0 && r_le16(&ne_mainhdr.entry_table_offset) != 0 &&
+		r_le16(&ne_mainhdr.imported_name_table_offset) < r_le16(&ne_mainhdr.entry_table_offset))
+		new_exerange(hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.imported_name_table_offset)),
+			hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.entry_table_offset))-1UL,
+			"NE imported name table");
+
+	fprintf(stdout,"NE (New Executable) main header (at %lu):\n",(unsigned long)hdr_ofs);
+	fprintf(stdout,"    Linker version:                              %u\n",ne_mainhdr.linker_version);
+	fprintf(stdout,"    Linker revision:                             %u\n",ne_mainhdr.linker_revision);
+	fprintf(stdout,"    Entry table offset:                          %u (+%u)\n",
 		hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.entry_table_offset)),
 		r_le16(&ne_mainhdr.entry_table_offset));
-	fprintf(stderr,"    Entry table length:                          %u\n",
+	fprintf(stdout,"    Entry table length:                          %u\n",
 		r_le16(&ne_mainhdr.entry_table_length));
-	fprintf(stderr,"    32-bit CRC:                                  0x%08lX\n",
+	fprintf(stdout,"    32-bit CRC:                                  0x%08lX\n",
 		(unsigned long)r_le32(&ne_mainhdr.file_crc_32));
-	fprintf(stderr,"    EXE flags:                                   0x%04X\n",
+	fprintf(stdout,"    EXE flags:                                   0x%04X\n",
 		r_le16(&ne_mainhdr.exe_flags));
-	fprintf(stderr,"    Auto data segment:                           0x%04X\n",
+	fprintf(stdout,"    Auto data segment:                           0x%04X\n",
 		r_le16(&ne_mainhdr.auto_data_segment));
-	fprintf(stderr,"    Initial local heap:                          %u\n",
+	fprintf(stdout,"    Initial local heap:                          %u\n",
 		r_le16(&ne_mainhdr.initial_local_heap));
-	fprintf(stderr,"    Initial stack size:                          %u\n",
+	fprintf(stdout,"    Initial stack size:                          %u\n",
 		r_le16(&ne_mainhdr.initial_stack_size));
-	fprintf(stderr,"    CS:IP:                                       0x%04X:0x%04X\n",
+	fprintf(stdout,"    CS:IP:                                       0x%04X:0x%04X\n",
 		r_le16(&ne_mainhdr.segment_cs),
 		r_le16(&ne_mainhdr.offset_ip));
-	fprintf(stderr,"    SS:SP:                                       0x%04X:0x%04X\n",
+	fprintf(stdout,"    SS:SP:                                       0x%04X:0x%04X\n",
 		r_le16(&ne_mainhdr.segment_ss),
 		r_le16(&ne_mainhdr.offset_sp));
-	fprintf(stderr,"    Segment table entries:                       %u\n",
+	fprintf(stdout,"    Segment table entries:                       %u\n",
 		r_le16(&ne_mainhdr.segment_table_entries));
-	fprintf(stderr,"    Module reference table entries:              %u\n",
+	fprintf(stdout,"    Module reference table entries:              %u\n",
 		r_le16(&ne_mainhdr.module_ref_table_entries));
-	fprintf(stderr,"    Nonresident table length:                    %u\n",
+	fprintf(stdout,"    Nonresident table length:                    %u\n",
 		r_le16(&ne_mainhdr.nonresident_table_length));
-	fprintf(stderr,"    Segment table offset:                        %u (+%u)\n",
+	fprintf(stdout,"    Segment table offset:                        %u (+%u)\n",
 		hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.segment_table_offset)),
 		r_le16(&ne_mainhdr.segment_table_offset));
-	fprintf(stderr,"    Resource table offset:                       %u (+%u)\n",
+	fprintf(stdout,"    Resource table offset:                       %u (+%u)\n",
 		hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.resource_table_offset)),
 		r_le16(&ne_mainhdr.resource_table_offset));
-	fprintf(stderr,"    Resident name table offset:                  %u (+%u)\n",
+	fprintf(stdout,"    Resident name table offset:                  %u (+%u)\n",
 		hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.resident_name_table_offset)),
 		r_le16(&ne_mainhdr.resident_name_table_offset));
-	fprintf(stderr,"    Module reference table offset:               %u (+%u)\n",
+	fprintf(stdout,"    Module reference table offset:               %u (+%u)\n",
 		hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.module_ref_table_offset)),
 		r_le16(&ne_mainhdr.module_ref_table_offset));
-	fprintf(stderr,"    Imported name table offset:                  %u (+%u)\n",
+	fprintf(stdout,"    Imported name table offset:                  %u (+%u)\n",
 		hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.imported_name_table_offset)),
 		r_le16(&ne_mainhdr.imported_name_table_offset));
-	fprintf(stderr,"    Nonresident table offset:                    %lu\n",
+	fprintf(stdout,"    Nonresident table offset:                    %lu\n",
 		(unsigned long)r_le32(&ne_mainhdr.nonresident_table_offset));
-	fprintf(stderr,"    Movable entries:                             %u\n",
+	fprintf(stdout,"    Movable entries:                             %u\n",
 		r_le16(&ne_mainhdr.movable_entries));
-	fprintf(stderr,"    Sector align shift:                          %u (%lu bytes)\n",
+	fprintf(stdout,"    Sector align shift:                          %u (%lu bytes)\n",
 		r_le16(&ne_mainhdr.sector_align_shift),
 		1UL << r_le16(&ne_mainhdr.sector_align_shift));
-	fprintf(stderr,"    Number of resource entries:                  %u\n",
+	fprintf(stdout,"    Number of resource entries:                  %u\n",
 		r_le16(&ne_mainhdr.number_of_resource_entries));
-	fprintf(stderr,"    EXE type flags:                              0x%02x\n",
+	fprintf(stdout,"    EXE type flags:                              0x%02x\n",
 		ne_mainhdr.executable_type);
-	fprintf(stderr,"    EXE additional info:                         0x%02x\n",
+	fprintf(stdout,"    EXE additional info:                         0x%02x\n",
 		ne_mainhdr.exe_additional_info);
-	fprintf(stderr,"    Fastload area offset:                        %lu\n",
+	fprintf(stdout,"    Fastload area offset:                        %lu\n",
 		(unsigned long)r_le16(&ne_mainhdr.offset_fastload_area) <<
 		(unsigned long)r_le16(&ne_mainhdr.sector_align_shift));
-	fprintf(stderr,"    Fastload area length:                        %lu\n",
+	fprintf(stdout,"    Fastload area length:                        %lu\n",
 		(unsigned long)r_le16(&ne_mainhdr.length_fastload_area) <<
 		(unsigned long)r_le16(&ne_mainhdr.sector_align_shift));
-	fprintf(stderr,"    Expected Windows version:                    0x%04x (%d.%d)\n",
+	fprintf(stdout,"    Expected Windows version:                    0x%04x (%d.%d)\n",
 		r_le16(&ne_mainhdr.win_expected_version),
 		r_le16(&ne_mainhdr.win_expected_version) >> 8,
 		r_le16(&ne_mainhdr.win_expected_version) & 0xFF);
@@ -181,6 +205,7 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 int main(int argc,char **argv) {
 	struct msdos_exe_header_regions exehdr_rgn;
 	struct msdos_exe_header exehdr;
+	uint32_t ofs=0;
 	int r;
 
 	if (parse_argv(argc,argv))
@@ -206,24 +231,48 @@ int main(int argc,char **argv) {
 		fprintf(stderr,"EXE header parsing failed\n");
 		return 1;
 	}
-	msdos_exe_header_add_regions(&exehdr_rgn);
 
 	/* MS-Windows and other formats extend the EXE format with an offset at 0x3C */
 	if (r_le16(&exehdr.header_size_in_paragraphs) >= 4) {
-		uint32_t ofs=0;
-
 		lseek(exe_fd,0x3C,SEEK_SET);
 		read(exe_fd,&ofs,4);
 		ofs = r_le32(&ofs);
-		if (ofs >= 0x40) {
-			lseek(exe_fd,ofs,SEEK_SET);
-			read(exe_fd,temp,4);
+	}
 
-			if (!memcmp(temp,"NE",2)) {
-				dump_ne(exe_fd,ofs);
+	if (ofs >= 0x40) {
+		lseek(exe_fd,ofs,SEEK_SET);
+		read(exe_fd,temp,4);
+
+		if (!memcmp(temp,"NE",2)) {
+			/* HACK: More often than not Win16 compiled executables are generated
+			 *       with the MS-DOS resident image region containing the NE header
+			 *       even if the actual stub is the usual 100-byte "This program
+			 *       requires Microsoft Windows" error message. In many cases it
+			 *       seems, executables generated by Microsoft's linker seem to
+			 *       have the resident image ALMOST cover the entire NE header,
+			 *       but not quite, while others have the resident image cover the
+			 *       entire Win16 segments, resources and all---which is silly:
+			 *       can you imagine DOS loading all that into memory just so the
+			 *       stub can say "this program requires Microsoft Windows"?
+			 *
+			 *       To avoid needless "this region extends past the end" messages,
+			 *       we cut the "end of image" offset to just before the NE offset */
+			if (exehdr_rgn.image_end > ofs) {
+				fprintf(stderr,"Truncating resident image end to exclude NE header (--nonetr to disable)\n");
+				exehdr_rgn.image_end = ofs;
 			}
 		}
+		else {
+			ofs = 0;
+		}
 	}
+	else {
+		ofs = 0;
+	}
+
+	msdos_exe_header_add_regions(&exehdr_rgn);
+
+	if (ofs != 0) dump_ne(exe_fd,ofs);
 
 	/* we do rudimentary checking for other extensions---check the bytes immediately after the resident image */
 	if (exehdr_rgn.image_end != 0 && exehdr_rgn.image_end < exehdr_rgn.file_end) {
