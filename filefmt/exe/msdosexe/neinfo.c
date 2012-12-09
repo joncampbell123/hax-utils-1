@@ -71,7 +71,10 @@ static int parse_argv(int argc,char **argv) {
 }
 
 static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
+	struct windows_ne_segment_table_entry te;
 	struct windows_ne_header ne_mainhdr;
+	uint32_t ofs,len;
+	unsigned int i;
 
 	if (sizeof(struct windows_ne_header) != 0x40)
 		return;
@@ -200,6 +203,67 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 		r_le16(&ne_mainhdr.win_expected_version),
 		r_le16(&ne_mainhdr.win_expected_version) >> 8,
 		r_le16(&ne_mainhdr.win_expected_version) & 0xFF);
+
+#if 0
+struct windows_ne_segment_table_entry {
+	uint16_le_t		offset;		/* offset in sectors */
+	uint16_le_t		length;		/* in bytes */
+	uint16_le_t		flags;
+	uint16_le_t		minimum_alloc;
+};
+#endif
+	if (r_le16(&ne_mainhdr.segment_table_offset) != 0 && r_le16(&ne_mainhdr.segment_table_entries) != 0) {
+		fprintf(stdout,"NE (New Executable) segment table:\n");
+		for (i=0;i < (unsigned int)r_le16(&ne_mainhdr.segment_table_entries);i++) {
+			if (lseek(exe_fd,hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.segment_table_offset))+(i*8UL),SEEK_SET) !=
+				(hdr_ofs+((uint32_t)r_le16(&ne_mainhdr.segment_table_offset))+(i*8UL)))
+				break;
+
+			if (read(exe_fd,&te,sizeof(te)) != sizeof(te))
+				break;
+
+			fprintf(stdout,"    Sector #%d flags=0x%04x\n",i+1,r_le16(&te.flags));
+
+			if (r_le16(&te.offset) != 0 && r_le16(&te.length) != 0) {
+				ofs = (uint32_t)r_le16(&te.offset) << (uint32_t)r_le16(&ne_mainhdr.sector_align_shift);
+				len = (uint32_t)r_le16(&te.length);
+				if (len == 0UL) len = 0x10000UL;
+
+				{
+					struct exe_range *rg = new_exerange(ofs,ofs+len-1UL,NULL);
+					size_t l = sprintf((char*)temp,"NE Segment #%d",i+1);
+
+					rg->alloc_str = 1;
+					rg->str = malloc(l+1);
+					if (rg->str) memcpy(rg->str,temp,l+1);
+				}
+
+				fprintf(stdout,"        Offset:                                  %lu\n",(unsigned long)ofs);
+				fprintf(stdout,"        Length:                                  %lu\n",(unsigned long)len);
+
+				if (r_le16(&te.flags) & 0x0100) { /* bit 8 is set if relocations follow the segment */
+					uint16_t count;
+
+					if (lseek(exe_fd,ofs+len,SEEK_SET) != (ofs+len))
+						continue;
+					if (read(exe_fd,&count,2) != 2)
+						continue;
+
+					{
+						struct exe_range *rg = new_exerange(ofs+len,ofs+len+2UL+((unsigned long)count * 8UL)-1UL,NULL);
+						size_t l = sprintf((char*)temp,"NE Segment #%d relocation data",i+1);
+
+						rg->alloc_str = 1;
+						rg->str = malloc(l+1);
+						if (rg->str) memcpy(rg->str,temp,l+1);
+					}
+				}
+			}
+
+			fprintf(stdout,"        Minimum allocation:                      %lu\n",
+				te.minimum_alloc == 0 ? 65536UL : (unsigned long)r_le16(&te.minimum_alloc));
+		}
+	}
 }
 
 int main(int argc,char **argv) {

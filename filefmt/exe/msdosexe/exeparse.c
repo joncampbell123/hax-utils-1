@@ -16,6 +16,7 @@
 #endif
 
 #include "util/rawint.h"
+#include "filefmt/exe/msdosexe/neexe.h"
 #include "filefmt/exe/msdosexe/dosexe.h"
 #include "filefmt/exe/msdosexe/exerange.h"
 #include "filefmt/exe/msdosexe/exeparse.h"
@@ -32,6 +33,7 @@ int msdos_exe_sanity_check() {
 	if (sizeof(struct msdos_exe_header) != 0x1C) return -1;
 	if (offsetof(struct msdos_exe_header,bytes_in_last_512_page) != 2) return -2;
 	if (sizeof(struct msdos_pe_coff_header) != 0x14) return -3;
+	if (sizeof(struct windows_ne_segment_table_entry) != 0x08) return -4;
 	return 0;
 }
 

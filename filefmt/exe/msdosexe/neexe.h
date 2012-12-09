@@ -42,6 +42,13 @@ struct windows_ne_header {
 	uint16_le_t		win_expected_version;	/* +0x3E expected version of Windows */
 							/* +0x40 */
 };
+
+struct windows_ne_segment_table_entry {
+	uint16_le_t		offset;		/* offset in sectors */
+	uint16_le_t		length;		/* in bytes */
+	uint16_le_t		flags;
+	uint16_le_t		minimum_alloc;
+};
 #pragma pack(pop)
 
 #endif /* __FILEFMT_EXE_MSDOS_NEEXE_H */
