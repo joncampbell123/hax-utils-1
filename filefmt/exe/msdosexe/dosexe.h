@@ -49,6 +49,13 @@ struct msdos_exe_header_regions {
 	uint32_t csip_offset;			/* CS:IP translated to a file offset */
 	uint32_t sssp_offset;			/* SS:IP translated to a file offset */
 };
+
+/* Future Crew UNREAL.EXE dirent */
+struct msdos_exe_fc_unreal_dirent {
+	char		name[16];
+	uint32_t	offset;
+	uint32_t	length;
+};
 #pragma pack(pop)
 
 #endif /* __FILEFMT_EXE_MSDOS_DOSEXE_H */

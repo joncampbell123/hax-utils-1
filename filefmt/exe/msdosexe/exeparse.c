@@ -36,6 +36,7 @@ int msdos_exe_sanity_check() {
 	if (offsetof(struct msdos_exe_header,bytes_in_last_512_page) != 2) return -2;
 	if (sizeof(struct msdos_pe_coff_header) != 0x14) return -3;
 	if (sizeof(struct windows_ne_segment_table_entry) != 0x08) return -4;
+	if (sizeof(struct msdos_exe_fc_unreal_dirent) != 0x18) return -5;
 	return 0;
 }
 
