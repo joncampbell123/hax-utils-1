@@ -222,7 +222,7 @@ struct windows_ne_segment_table_entry {
 			if (read(exe_fd,&te,sizeof(te)) != sizeof(te))
 				break;
 
-			fprintf(stdout,"    Sector #%d flags=0x%04x\n",i+1,r_le16(&te.flags));
+			fprintf(stdout,"    Sector #0x%X flags=0x%04x\n",i+1,r_le16(&te.flags));
 
 			if (r_le16(&te.offset) != 0 && r_le16(&te.length) != 0) {
 				ofs = (uint32_t)r_le16(&te.offset) << (uint32_t)r_le16(&ne_mainhdr.sector_align_shift);
@@ -231,7 +231,7 @@ struct windows_ne_segment_table_entry {
 
 				{
 					struct exe_range *rg = new_exerange(ofs,ofs+len-1UL,NULL);
-					size_t l = sprintf((char*)temp,"NE Segment #%d",i+1);
+					size_t l = sprintf((char*)temp,"NE Segment #0x%X",i+1);
 
 					rg->alloc_str = 1;
 					rg->str = malloc(l+1);
@@ -251,7 +251,7 @@ struct windows_ne_segment_table_entry {
 
 					{
 						struct exe_range *rg = new_exerange(ofs+len,ofs+len+2UL+((unsigned long)count * 8UL)-1UL,NULL);
-						size_t l = sprintf((char*)temp,"NE Segment #%d relocation data",i+1);
+						size_t l = sprintf((char*)temp,"NE Segment #0x%X relocation data",i+1);
 
 						rg->alloc_str = 1;
 						rg->str = malloc(l+1);
