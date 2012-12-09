@@ -21,6 +21,8 @@
 #include "filefmt/exe/msdosexe/exerange.h"
 #include "filefmt/exe/msdosexe/exeparse.h"
 
+unsigned char		temp[4096];
+
 const char		str_exe_main_header[] = "EXE main header";
 const char		str_exe_header_area[] = "EXE header area";
 const char		str_exe_resident_image[] = "EXE resident image";

@@ -20,7 +20,6 @@
 #include "filefmt/exe/msdosexe/exerange.h"
 #include "filefmt/exe/msdosexe/exeparse.h"
 
-static unsigned char		temp[4096];
 static int			exe_fd = -1;
 static char*			exe_file = NULL;
 
@@ -150,9 +149,11 @@ int main(int argc,char **argv) {
 			read(exe_fd,temp,4);
 
 			if (!memcmp(temp,"PE\0\0",4)) {
+				new_exerange(0x3C,0x3F,"Extended header pointer");
 				pe_examine(exe_fd,ofs);
 			}
 			else if (!memcmp(temp,"NE",2)) {
+				new_exerange(0x3C,0x3F,"Extended header pointer");
 				new_exerange(ofs,ofs+0x3FUL,str_ne_header);
 			}
 		}

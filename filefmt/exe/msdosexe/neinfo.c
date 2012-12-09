@@ -17,11 +17,11 @@
 
 #include "util/rawint.h"
 #include "filefmt/exe/msdosexe/neexe.h"
+#include "filefmt/exe/msdosexe/stubs.h"
 #include "filefmt/exe/msdosexe/dosexe.h"
 #include "filefmt/exe/msdosexe/exerange.h"
 #include "filefmt/exe/msdosexe/exeparse.h"
 
-static unsigned char		temp[4096];
 static int			exe_fd = -1;
 static char*			exe_file = NULL;
 
@@ -204,14 +204,6 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 		r_le16(&ne_mainhdr.win_expected_version) >> 8,
 		r_le16(&ne_mainhdr.win_expected_version) & 0xFF);
 
-#if 0
-struct windows_ne_segment_table_entry {
-	uint16_le_t		offset;		/* offset in sectors */
-	uint16_le_t		length;		/* in bytes */
-	uint16_le_t		flags;
-	uint16_le_t		minimum_alloc;
-};
-#endif
 	if (r_le16(&ne_mainhdr.segment_table_offset) != 0 && r_le16(&ne_mainhdr.segment_table_entries) != 0) {
 		fprintf(stdout,"NE (New Executable) segment table:\n");
 		for (i=0;i < (unsigned int)r_le16(&ne_mainhdr.segment_table_entries);i++) {
@@ -321,6 +313,8 @@ int main(int argc,char **argv) {
 			 *
 			 *       To avoid needless "this region extends past the end" messages,
 			 *       we cut the "end of image" offset to just before the NE offset */
+			new_exerange(0x3C,0x3F,"Extended header pointer");
+
 			if (exehdr_rgn.image_end > ofs) {
 				fprintf(stderr,"Truncating resident image end to exclude NE header (--nonetr to disable)\n");
 				exehdr_rgn.image_end = ofs;
@@ -335,6 +329,9 @@ int main(int argc,char **argv) {
 	}
 
 	msdos_exe_header_add_regions(&exehdr_rgn);
+
+	if (exehdr_rgn.image_ofs < exehdr_rgn.image_end)
+		identify_msdos_stub(exe_fd,&exehdr,&exehdr_rgn);
 
 	if (ofs != 0) dump_ne(exe_fd,ofs);
 

@@ -30,7 +30,7 @@ install:
 distclean: clean
 	rm -Rf $(builddir)
 
-$(bindir)/neinfo: $(objdir)/neinfo.o $(objdir)/exerange.o $(objdir)/exeparse.o
+$(bindir)/neinfo: $(objdir)/neinfo.o $(objdir)/exerange.o $(objdir)/exeparse.o $(objdir)/stubs.o
 	$(CC) $(MY_LDFLAGS) $(LDFLAGS) -o $@ $^
 
 $(objdir)/neinfo.o: neinfo.c
@@ -40,6 +40,9 @@ $(bindir)/info: $(objdir)/info.o $(objdir)/exerange.o $(objdir)/exeparse.o
 	$(CC) $(MY_LDFLAGS) $(LDFLAGS) -o $@ $^
 
 $(objdir)/info.o: info.c
+	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
+
+$(objdir)/stubs.o: stubs.c
 	$(CC) $(MY_CFLAGS) $(CFLAGS) -c -o $@ $<
 
 $(objdir)/exerange.o: exerange.c
