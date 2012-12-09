@@ -329,6 +329,7 @@ int main(int argc,char **argv) {
 	}
 
 	msdos_exe_header_add_regions(&exehdr_rgn);
+	msdos_exe_header_dump_entrypoints(stdout,exe_fd,&exehdr_rgn);
 
 	if (exehdr_rgn.image_ofs < exehdr_rgn.image_end)
 		identify_msdos_stub(exe_fd,&exehdr,&exehdr_rgn);

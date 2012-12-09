@@ -104,7 +104,7 @@ int main(int argc,char **argv) {
 		return 1;
 	}
 	msdos_exe_header_add_regions(&exehdr_rgn);
-
+	msdos_exe_header_dump_entrypoints(stdout,exe_fd,&exehdr_rgn);
 	if (exehdr_rgn.reloc_ofs != 0UL && exehdr_rgn.reloc_entries != 0) {
 		struct msdos_exe_relocation_entry *table = (struct msdos_exe_relocation_entry*)temp;
 		unsigned int c = exehdr_rgn.reloc_entries;

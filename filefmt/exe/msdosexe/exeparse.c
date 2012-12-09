@@ -57,6 +57,8 @@ int msdos_exe_header_compute_regions(struct msdos_exe_header_regions *r,struct m
 		r->reloc_entries = 0;
 	}
 
+	r->csip_offset = ((((uint32_t)r_le16(&h->initial_cs) << 4UL) + (uint32_t)r_le16(&h->initial_ip)) & 0xFFFFFUL) + r->image_ofs;
+	r->sssp_offset = ((((uint32_t)r_le16(&h->initial_ss) << 4UL) + (uint32_t)r_le16(&h->initial_sp)) & 0xFFFFFUL) + r->image_ofs;
 	return 0;
 }
 
@@ -124,6 +126,33 @@ void msdos_exe_header_add_regions(struct msdos_exe_header_regions *exehdr_rgn) {
 	}
 	else {
 		fprintf(stderr,"WARNING: Image end at zero\n");
+	}
+}
+
+void msdos_exe_header_dump_entrypoints(FILE *fp,int exe_fd,struct msdos_exe_header_regions *exehdr_rgn) {
+	int r,i;
+
+	fprintf(stdout,"EXE image entry points:\n");
+	if (exehdr_rgn->csip_offset >= exehdr_rgn->image_ofs && exehdr_rgn->csip_offset < exehdr_rgn->image_end) {
+		fprintf(fp,"    Entry point (CS:IP):                         %lu from start of file\n",
+			(unsigned long)exehdr_rgn->csip_offset);
+
+		if (lseek(exe_fd,exehdr_rgn->csip_offset,SEEK_SET) == exehdr_rgn->csip_offset && (r=read(exe_fd,temp,32)) > 0) {
+			fprintf(fp,"        -> ");
+			for (i=0;i < r;i++) fprintf(fp,"%02X ",temp[i]);
+			fprintf(fp,"\n");
+		}
+	}
+
+	if (exehdr_rgn->sssp_offset >= exehdr_rgn->image_ofs && exehdr_rgn->sssp_offset < exehdr_rgn->image_end) {
+		fprintf(fp,"    Initial stack pointer (SS:SP):               %lu from start of file\n",
+			(unsigned long)exehdr_rgn->sssp_offset);
+
+		if (lseek(exe_fd,exehdr_rgn->sssp_offset,SEEK_SET) == exehdr_rgn->sssp_offset && (r=read(exe_fd,temp,32)) > 0) {
+			fprintf(fp,"        -> ");
+			for (i=0;i < r;i++) fprintf(fp,"%02X ",temp[i]);
+			fprintf(fp,"\n");
+		}
 	}
 }
 

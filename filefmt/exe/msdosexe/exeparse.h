@@ -6,6 +6,7 @@ void fprintf_exehdr(FILE *fp,struct msdos_exe_header *x);
 void msdos_exe_header_add_regions(struct msdos_exe_header_regions *exehdr_rgn);
 int msdos_exe_header_compute_regions(struct msdos_exe_header_regions *r,struct msdos_exe_header *h,uint32_t file_len);
 int msdos_exe_read_main_header(struct msdos_exe_header *exehdr,struct msdos_exe_header_regions *exehdr_rgn,int exe_fd);
+void msdos_exe_header_dump_entrypoints(FILE *fp,int exe_fd,struct msdos_exe_header_regions *exehdr_rgn);
 
 extern unsigned char		temp[4096];
 

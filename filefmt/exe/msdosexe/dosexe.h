@@ -46,6 +46,8 @@ struct msdos_exe_header_regions {
 	uint32_t image_ofs;			/* first byte */
 	uint32_t image_end;			/* last byte + 1 */
 	uint32_t file_end;			/* last byte + 1 */
+	uint32_t csip_offset;			/* CS:IP translated to a file offset */
+	uint32_t sssp_offset;			/* SS:IP translated to a file offset */
 };
 #pragma pack(pop)
 
