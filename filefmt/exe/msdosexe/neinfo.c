@@ -73,7 +73,7 @@ static int parse_argv(int argc,char **argv) {
 static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 	struct windows_ne_segment_table_entry te;
 	struct windows_ne_header ne_mainhdr;
-	uint32_t ofs,len;
+	uint32_t ofs,len,tmp;
 	unsigned int i;
 
 	if (sizeof(struct windows_ne_header) != 0x40)
@@ -214,7 +214,23 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 			if (read(exe_fd,&te,sizeof(te)) != sizeof(te))
 				break;
 
-			fprintf(stdout,"    Sector #0x%X flags=0x%04x\n",i+1,r_le16(&te.flags));
+			tmp = r_le16(&te.flags);
+			fprintf(stdout,"    Sector #0x%X flags=0x%04x ",i+1,tmp);
+			fprintf(stdout,"%s ",tmp&1?"DATA":"CODE");
+			if (tmp&2) fprintf(stdout,"ALLOCATED ");
+			if (tmp&4) fprintf(stdout,"LOADED ");
+			fprintf(stdout,"%s ",tmp&16?"MOVABLE":"FIXED");
+			fprintf(stdout,"%s ",tmp&32?"SHAREABLE":"NONSHAREABLE");
+			fprintf(stdout,"%s ",tmp&64?"PRELOAD":"LOADONCALL");
+			if (tmp&1) {
+				if (tmp&128) fprintf(stdout,"READONLY ");
+			}
+			else {
+				if (tmp&128) fprintf(stdout,"EXECUTEONLY ");
+			}
+			if (tmp&256) fprintf(stdout,"HasRelocationData ");
+			if (tmp&4096) fprintf(stdout,"DISCARDABLE ");
+			fprintf(stdout,"\n");
 
 			if (r_le16(&te.offset) != 0 && r_le16(&te.length) != 0) {
 				ofs = (uint32_t)r_le16(&te.offset) << (uint32_t)r_le16(&ne_mainhdr.sector_align_shift);
@@ -234,7 +250,7 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 				fprintf(stdout,"        Length:                                  %lu\n",(unsigned long)len);
 
 				if (r_le16(&te.flags) & 0x0100) { /* bit 8 is set if relocations follow the segment */
-					uint16_t count;
+					uint16_t count,ii;
 
 					if (lseek(exe_fd,ofs+len,SEEK_SET) != (ofs+len))
 						continue;
@@ -248,6 +264,65 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 						rg->alloc_str = 1;
 						rg->str = malloc(l+1);
 						if (rg->str) memcpy(rg->str,temp,l+1);
+					}
+
+					fprintf(stdout,"        Relocation data (%u entries)\n",(unsigned int)count);
+					for (ii=0;ii < count;ii++) {
+						if (read(exe_fd,temp,8) != 8) break;
+
+						fprintf(stdout,"          [%u]: ",ii+1);
+
+						switch (temp[0]) {
+							case 0x00:
+								fprintf(stdout,"8-bit offset ");
+								break;
+							case 0x02:
+								fprintf(stdout,"16-bit segment ");
+								break;
+							case 0x03:
+								fprintf(stdout,"16:16 pointer ");
+								break;
+							case 0x05:
+								fprintf(stdout,"16-bit offset ");
+								break;
+							case 0x0B:
+								fprintf(stdout,"16:32 pointer ");
+								break;
+							case 0x0D:
+								fprintf(stdout,"32-bit offset ");
+								break;
+							default:
+								fprintf(stdout,"UnknownAddrType=%u ",temp[0]);
+								break;
+						}
+
+						fprintf(stdout,"@0x%04x ",r_le16r(temp+2));
+
+						switch (temp[1]&3) {
+							case 0x00:
+								if (temp[4] == 0xFF && temp[5] == 0x00) {
+									fprintf(stdout,"to movable segment ordinal %u ",r_le16r(temp+6));
+								}
+								else {
+									fprintf(stdout,"to fixed segment #%d:0x%04x ",temp[4],r_le16r(temp+6));
+								}
+								break;
+							case 0x01:
+								fprintf(stdout,"Imported mrefidx=%u ordinal %u ",r_le16r(temp+4),r_le16r(temp+6));
+								break;
+							case 0x02:
+								fprintf(stdout,"Imported mrefidx=%u nameofs=%u ",r_le16r(temp+4),r_le16r(temp+6));
+								break;
+							case 0x03:
+								fprintf(stdout,"OSFIXUP type 0x%04x ",r_le16r(temp+4));
+								break;
+							default:
+								fprintf(stdout,"UnknownRelocType=%u ",temp[1]&3);
+								break;
+						}
+						if (temp[1]&4) fprintf(stdout,"[ADD] ");
+
+						fprintf(stdout,"\n");
 					}
 				}
 			}
