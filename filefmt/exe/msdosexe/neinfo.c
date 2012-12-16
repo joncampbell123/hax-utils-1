@@ -108,7 +108,7 @@ static void dump_ne(int exe_fd,uint32_t hdr_ofs) {
 
 	if (r_le32(&ne_mainhdr.nonresident_table_offset) != 0 && r_le16(&ne_mainhdr.nonresident_table_length) != 0)
 		new_exerange(r_le32(&ne_mainhdr.nonresident_table_offset),
-			r_le32(&ne_mainhdr.nonresident_table_offset)+((uint32_t)r_le16(&ne_mainhdr.nonresident_table_length)),
+			r_le32(&ne_mainhdr.nonresident_table_offset)+((uint32_t)r_le16(&ne_mainhdr.nonresident_table_length))-1UL,
 			"NE nonresident name table");
 
 	if (r_le16(&ne_mainhdr.module_ref_table_offset) != 0 && r_le16(&ne_mainhdr.module_ref_table_entries) != 0)
