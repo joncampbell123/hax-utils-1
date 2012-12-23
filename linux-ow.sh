@@ -10,11 +10,4 @@ export EDPATH=$WATCOM/eddat
 export PATH=$WATCOM/binl:$WATCOM/binw:$PATH
 export "INCLUDE=$WATCOM/h/nt;$WATCOM/h/nt/directx;$WATCOM/h/nt/ddk;$WATCOM/h"
 export HPS=/
-# PROJTOP: top directory of project we are building
-export PROJTOP=`pwd`
-# TOP: top directory of entire project. set buildall.sh or make.sh
-if [ x"$TOP" == x ]; then
-	echo WARNING: TOP directory not set
-	sleep 1
-fi
 
