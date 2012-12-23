@@ -2,9 +2,9 @@
 export WATCOM=/usr/watcom
 
 # TESTING: If Jon's custom branch of Open Watcom 1.9 is present, use it--this is vital for testing!
-if [ -d "/usr/src/openwatcom-1.9/rel2/binl" ]; then
-	export WATCOM=/usr/src/openwatcom-1.9/rel2
-fi
+#if [ -d "/usr/src/openwatcom-1.9/rel2/binl" ]; then
+#	export WATCOM=/usr/src/openwatcom-1.9/rel2
+#fi
 
 export EDPATH=$WATCOM/eddat
 export PATH=$WATCOM/binl:$WATCOM/binw:$PATH

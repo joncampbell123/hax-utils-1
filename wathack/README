@@ -1,0 +1,7 @@
+Watcom compiler + linker hacking tests
+
+
+test1               - Reference EXE (MS-DOS program that prints "hello world")
+test2               - Inserting arbitrary data into the program
+test3               - Inserting arbitrary data into the program
+
