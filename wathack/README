@@ -4,4 +4,7 @@ Watcom compiler + linker hacking tests
 test1               - Reference EXE (MS-DOS program that prints "hello world")
 test2               - Inserting arbitrary data into the program
 test3               - Inserting arbitrary data into the program
+test4               - Mixing 16-bit realmode (C) and 32-bit protected mode (ASM) using BITS 32
+test5               - Mixing 16-bit realmode (C) and 32-bit protected mode (ASM) using USE32
+test6               - Mixing 16-bit realmode (C) and 32-bit protected mode (C). Yeah, ick :)
 
