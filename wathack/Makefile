@@ -24,7 +24,8 @@ $(objdir):
 	mkdir -p $(objdir)
 
 clean:
-	rm -f $(objdir)/*
+	rm -f $(objdir)/* $(bindir)/*
+	rmdir -p $(objdir) $(bindir) || true
 
 install:
 

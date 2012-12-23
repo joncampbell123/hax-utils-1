@@ -11,3 +11,7 @@ export PATH=$WATCOM/binl:$WATCOM/binw:$PATH
 export "INCLUDE=$WATCOM/h/nt;$WATCOM/h/nt/directx;$WATCOM/h/nt/ddk;$WATCOM/h"
 export HPS=/
 
+#export WCC=$WATCOM/binl/wcc
+#export WCC386=$WATCOM/binl/wcc386
+#export WLINK=$WATCOM/binl/wlink
+
