@@ -7,4 +7,9 @@ test3               - Inserting arbitrary data into the program
 test4               - Mixing 16-bit realmode (C) and 32-bit protected mode (ASM) using BITS 32
 test5               - Mixing 16-bit realmode (C) and 32-bit protected mode (ASM) using USE32
 test6               - Mixing 16-bit realmode (C) and 32-bit protected mode (C). Yeah, ick :)
+test7               - Reference EXE (32-bit MS-DOS program)
+test8               - Inserting arbitrary data into the program
+test9               - Mixing 16-bit realmode (C) and 32-bit protected mode (ASM) using USE16
+test10              - Mixing 16-bit realmode (C) and 32-bit protected mode (C), target 32-bit. Yeah, ick :)
+		      (and yet, Watcom's linker has no problem sticking 16-bit code into a 32-bit EXE)
 

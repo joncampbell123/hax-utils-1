@@ -5,7 +5,55 @@ builddir=wat
 bindir=$(builddir)/bin
 objdir=$(builddir)/obj
 
-all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe
+all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe $(bindir)/test7.exe $(bindir)/test8.exe $(bindir)/test9.exe $(bindir)/test10.exe $(bindir)/dos4gw.exe
+
+$(bindir)/dos4gw.exe: dos4gw.dat
+	cp -v dos4gw.dat $(bindir)/dos4gw.exe
+
+
+$(bindir)/test10.exe: $(objdir)/test10.obj $(objdir)/test10a.obj
+	@echo option quiet system dos4g file $(objdir)/test10a.obj file $(objdir)/test10.obj option map=$(objdir)/test10.map name $@ >$(objdir)/test10.lnk
+	. ../linux-ow.sh ; /usr/watcom/binl/wlink @$(objdir)/test10.lnk
+
+# Note our hack to MAKE the linker take it: wcc386 by default uses "CODE" "DATA" etc for
+# section/segment names. It will NOT mix 16-bit and 32-bit segments! So we rename the sections.
+# we also remove stack checks (-s) to avoid "undefined __CHK" errors.
+# we also enforce inline 80x87 to avoid linking to the 8087 emulation.
+$(objdir)/test10a.obj: test10a.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc -nd=DATA16 -s -fpi87 -fo=$(objdir)/.obj $^
+
+$(objdir)/test10.obj: test10.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc386 -fo=$(objdir)/.obj $^
+
+
+$(bindir)/test9.exe: $(objdir)/test9.obj $(objdir)/test9a.obj
+	@echo option quiet system dos4g file $(objdir)/test9a.obj file $(objdir)/test9.obj option map=$(objdir)/test9.map name $@ >$(objdir)/test9.lnk
+	. ../linux-ow.sh ; /usr/watcom/binl/wlink @$(objdir)/test9.lnk
+
+$(objdir)/test9a.obj: test9a.asm
+	nasm -o $@ -f obj $^
+
+$(objdir)/test9.obj: test9.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc386 -fo=$(objdir)/.obj $^
+
+
+$(bindir)/test8.exe: $(objdir)/test8.obj $(objdir)/test8a.obj
+	@echo option quiet system dos4g file $(objdir)/test8a.obj file $(objdir)/test8.obj option map=$(objdir)/test8.map name $@ >$(objdir)/test8.lnk
+	. ../linux-ow.sh ; /usr/watcom/binl/wlink @$(objdir)/test8.lnk
+
+$(objdir)/test8a.obj: test8a.asm
+	nasm -o $@ -f obj $^
+
+$(objdir)/test8.obj: test8.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc386 -fo=$(objdir)/.obj $^
+
+
+$(bindir)/test7.exe: $(objdir)/test7.obj
+	@echo option quiet system dos4g file $(objdir)/test7.obj option map=$(objdir)/test7.map name $@ >$(objdir)/test7.lnk
+	. ../linux-ow.sh ; /usr/watcom/binl/wlink @$(objdir)/test7.lnk
+
+$(objdir)/test7.obj: test7.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc386 -fo=$(objdir)/.obj $^
 
 
 $(bindir)/test6.exe: $(objdir)/test6.obj $(objdir)/test6a.obj
