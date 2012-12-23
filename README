@@ -27,4 +27,5 @@ of HAX. They are:
 
 filefmt             File format/content parsing and editing
   exe                 Executable file formats
+wathack             Open Watcom related hacking
 

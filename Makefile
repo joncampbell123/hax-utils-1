@@ -1,4 +1,4 @@
-subdirs=filefmt
+subdirs=filefmt wathack
 
 all:
 	for i in $(subdirs); do make -C $$i || break; done
