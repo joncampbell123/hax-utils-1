@@ -5,10 +5,25 @@ builddir=wat
 bindir=$(builddir)/bin
 objdir=$(builddir)/obj
 
-all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe $(bindir)/test7.exe $(bindir)/test8.exe $(bindir)/test9.exe $(bindir)/test10.exe $(bindir)/dos4gw.exe
+all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe $(bindir)/test7.exe $(bindir)/test8.exe $(bindir)/test9.exe $(bindir)/test10.exe $(bindir)/test11.exe $(bindir)/dos4gw.exe
 
 $(bindir)/dos4gw.exe: dos4gw.dat
 	cp -v dos4gw.dat $(bindir)/dos4gw.exe
+
+
+$(bindir)/test11.exe: $(objdir)/test11.obj $(objdir)/test11a.obj
+	@echo option quiet system dos4g file $(objdir)/test11a.obj file $(objdir)/test11.obj option artificial option eliminate option map=$(objdir)/test11.map name $@ >$(objdir)/test11.lnk
+	. ../linux-ow.sh ; /usr/watcom/binl/wlink @$(objdir)/test11.lnk
+
+# Note our hack to MAKE the linker take it: wcc386 by default uses "CODE" "DATA" etc for
+# section/segment names. It will NOT mix 16-bit and 32-bit segments! So we rename the sections.
+# we also remove stack checks (-s) to avoid "undefined __CHK" errors.
+# we also enforce inline 80x87 to avoid linking to the 8087 emulation.
+$(objdir)/test11a.obj: test11a.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc -nd=DATA16 -s -fpi87 -ms -zu -fo=$(objdir)/.obj $^
+
+$(objdir)/test11.obj: test11.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc386 -fo=$(objdir)/.obj $^
 
 
 $(bindir)/test10.exe: $(objdir)/test10.obj $(objdir)/test10a.obj
