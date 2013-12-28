@@ -1,4 +1,3 @@
-/* this is 16-bit code */
 
 #include <stdint.h>
 
@@ -28,8 +27,8 @@ void _cdecl function1_16() {
 		push	cx
 		push	si
 		mov	cx,0x1234
-		mov	si,offset function1_message
-		mov	si,offset function1_message2
+		mov	si,offset function1_message		; NTS: the data offset written here is relative to the 16-bit data segment
+		mov	si,offset function1_message2		;      not the host program's 32-bit data segment!
 l1:		nop
 		loop	l1
 		pop	si

@@ -1,4 +1,3 @@
-/* this is 32-bit code */
 
 #include <stdint.h>
 
