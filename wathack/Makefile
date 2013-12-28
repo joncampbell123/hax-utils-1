@@ -5,10 +5,24 @@ builddir=wat
 bindir=$(builddir)/bin
 objdir=$(builddir)/obj
 
-all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe $(bindir)/test7.exe $(bindir)/test8.exe $(bindir)/test9.exe $(bindir)/test10.exe $(bindir)/test11.exe $(bindir)/dos4gw.exe
+all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe $(bindir)/test7.exe $(bindir)/test8.exe $(bindir)/test9.exe $(bindir)/test10.exe $(bindir)/test11.exe $(bindir)/test12.exe $(bindir)/dos4gw.exe
 
 $(bindir)/dos4gw.exe: dos4gw.dat
 	cp -v dos4gw.dat $(bindir)/dos4gw.exe
+
+$(bindir)/test12.exe: $(objdir)/test12.obj $(objdir)/test12gcc.o
+	@echo option quiet system dos4g file $(objdir)/test12gcc.o file $(objdir)/test12.obj option artificial option eliminate option map=$(objdir)/test12.map name $@ >$(objdir)/test12.lnk
+	. ../linux-ow.sh ; /usr/watcom/binl/wlink @$(objdir)/test12.lnk
+
+# in this hack we use the Watcom linker to compile the main function (with Watcom C) and additional functions (with GCC)
+# Note that GCC 4.5 and later assume 16-byte stack alignment, so for Watcom interop we have to explicitly tell it to
+# target a 386 and assume/work with 4-byte stack alignment. If actually used in a Linux program it becomes ABI compatible,
+# but we're targeting Watcom C + DOS 32-bit, so who cares?
+$(objdir)/test12gcc.o: test12gcc.c
+	gcc -fleading-underscore -mincoming-stack-boundary=2 -mpreferred-stack-boundary=2 -mstackrealign -march=i386 -g0 -Os -c -o $@ $^
+
+$(objdir)/test12.obj: test12.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc386 -fo=$(objdir)/.obj $^
 
 
 $(bindir)/test11.exe: $(objdir)/test11.obj $(objdir)/test11a.obj

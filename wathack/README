@@ -16,3 +16,5 @@ test11              - Mixing 16-bit realmode (C) and 32-bit protected mode (C), 
                       This time the 16-bit code calls another 16-bit code, to test whether relocations are
                       done correctly.
 
+test12              - Mixing 32-bit C (Watcom) and 32-bit C (GCC i386) functions and objects.
+
