@@ -33,12 +33,6 @@ int main() {
 	for (i=0;i < 16;i++) printf("%02X ",p[i]);
 	printf("\n");
 
-#if 1
-	p = (unsigned char*)0x1616B0;
-	for (i=0;i < 16;i++) printf("%02X ",p[i]);
-	printf("\n");
-#endif
-
 	printf("Our GCC string: %04x:%04x\n",FP_SEG(function1_message),FP_OFF(function1_message));
 	printf("It says: %Fs\n",function1_message);
 
