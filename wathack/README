@@ -20,4 +20,6 @@ test12              - Mixing 32-bit C (Watcom) and 32-bit C (GCC i386) functions
                       Includes proof of concept Watcom C calling a GCC compiled function.
 test13              - Same as test12, testing that Watcom is able to pass parameters to GCC
                       functions.
+test14              - Test passing in pointer and integer (param order test). Function calls
+                      another function to print to screen (using INT 10h).
 
