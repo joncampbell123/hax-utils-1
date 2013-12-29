@@ -57,6 +57,31 @@ static inline unsigned long long return_watcall_4i(unsigned int a,unsigned int b
 	return r;
 }
 
+/* under normal circumstances GCC's optimizer will boil this down to the direct x86 instructions
+ * necessary to make a __watcall type function call. */
+/* void __watcall return_watcall_nr(unsigned int a); */
+static inline void return_watcall_5i(unsigned int a,unsigned int b,unsigned int c,unsigned int d,unsigned int e) {
+	/* NTS: Remember __watcall calling convention puts the underscore at the end of the function name! */
+	__asm__ __volatile__ (	"	pushl	%5\n"
+				"	call	return_watcall_5i_"
+		: /* out  */ "=a" (a)						/* return value is EDX:EAX (%0) */
+		: /* in   */ "a" (a), "d" (b), "b" (c), "c" (d), "g" (e)	/* __watcall 5 params EAX, EDX, EBX, ECX and 5th to stack */
+		: /* clob */);
+}
+
+/* under normal circumstances GCC's optimizer will boil this down to the direct x86 instructions
+ * necessary to make a __watcall type function call. */
+/* void __watcall return_watcall_nr(unsigned int a); */
+static inline void return_watcall_6i(unsigned int a,unsigned int b,unsigned int c,unsigned int d,unsigned int e,unsigned int f) {
+	/* NTS: Remember __watcall calling convention puts the underscore at the end of the function name! */
+	__asm__ __volatile__ (	"	pushl	%6\n"
+				"	pushl	%5\n"
+				"	call	return_watcall_6i_"
+		: /* out  */ "=a" (a)							/* return value is EDX:EAX (%0) */
+		: /* in   */ "a" (a), "d" (b), "b" (c), "c" (d), "g" (e), "g" (f)	/* __watcall 5 params EAX, EDX, EBX, ECX and 5th & 6th to stack */
+		: /* clob */);
+}
+
 unsigned long long watcall_res;
 
 unsigned int function1_gcc(const char *str) {
@@ -69,6 +94,8 @@ unsigned int function1_gcc(const char *str) {
 	return_watcall_nr(0x12345678);
 	val = return_watcall(0x12345678);
 	watcall_res = return_watcall_4i(0x12345678,0xABCDEF,0x87654321,0xFEDCBA);
+	return_watcall_5i(0x12345678,0xABCDEF,0x87654321,0xFEDCBA,0xAA55BB66);
+	return_watcall_6i(0x12345678,0xABCDEF,0x87654321,0xFEDCBA,0xAA55BB66,0x99887766);
 
 	s=function1_message;
 	while (*s) int10_put(*s++);

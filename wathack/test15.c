@@ -23,6 +23,14 @@ unsigned long long __watcall return_watcall_4i(unsigned int a,unsigned int b,uns
 	return 0x123456789ABCDEFULL;
 }
 
+void __watcall return_watcall_5i(unsigned int a,unsigned int b,unsigned int c,unsigned int d,unsigned int e) {
+	printf("return_watcall_5i() called! a=0x%08lx b=0x%08lx c=0x%08lx d=0x%08lx e=0x%08lx\n",a,b,c,d,e);
+}
+
+void __watcall return_watcall_6i(unsigned int a,unsigned int b,unsigned int c,unsigned int d,unsigned int e,unsigned int f) {
+	printf("return_watcall_6i() called! a=0x%08lx b=0x%08lx c=0x%08lx d=0x%08lx e=0x%08lx f=0x%08lx\n",a,b,c,d,e,f);
+}
+
 int main() {
 	unsigned char *p;
 	unsigned int i;
