@@ -22,4 +22,6 @@ test13              - Same as test12, testing that Watcom is able to pass parame
                       functions.
 test14              - Test passing in pointer and integer (param order test). Function calls
                       another function to print to screen (using INT 10h).
+test15              - Mixing Watcom C and GCC, this time, in a way that permits GCC to make
+                      calls to __watcall type functions (not normally supported by GCC).
 

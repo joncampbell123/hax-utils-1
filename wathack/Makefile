@@ -5,10 +5,23 @@ builddir=wat
 bindir=$(builddir)/bin
 objdir=$(builddir)/obj
 
-all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe $(bindir)/test7.exe $(bindir)/test8.exe $(bindir)/test9.exe $(bindir)/test10.exe $(bindir)/test11.exe $(bindir)/test12.exe $(bindir)/test13.exe $(bindir)/test14.exe $(bindir)/dos4gw.exe
+all: $(builddir) $(bindir) $(objdir) $(bindir)/test1.exe $(bindir)/test2.exe $(bindir)/test3.exe $(bindir)/test4.exe $(bindir)/test5.exe $(bindir)/test6.exe $(bindir)/test7.exe $(bindir)/test8.exe $(bindir)/test9.exe $(bindir)/test10.exe $(bindir)/test11.exe $(bindir)/test12.exe $(bindir)/test13.exe $(bindir)/test14.exe $(bindir)/test15.exe $(bindir)/dos4gw.exe
 
 $(bindir)/dos4gw.exe: dos4gw.dat
 	cp -v dos4gw.dat $(bindir)/dos4gw.exe
+
+
+
+$(bindir)/test15.exe: $(objdir)/test15.obj $(objdir)/test15gcc.o
+	@echo option quiet system dos4g file $(objdir)/test15gcc.o file $(objdir)/test15.obj option artificial option eliminate option map=$(objdir)/test15.map name $@ >$(objdir)/test15.lnk
+	. ../linux-ow.sh ; /usr/watcom/binl/wlink @$(objdir)/test15.lnk
+
+$(objdir)/test15gcc.o: test15gcc.c
+	gcc -fleading-underscore -mincoming-stack-boundary=2 -mpreferred-stack-boundary=2 -mstackrealign -march=i386 -g0 -Os -c -o $@ $^
+
+$(objdir)/test15.obj: test15.c
+	. ../linux-ow.sh ; /usr/watcom/binl/wcc386 -mf -fo=$(objdir)/.obj $^
+
 
 
 
